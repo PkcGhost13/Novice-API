@@ -1,4 +1,3 @@
-from typing import Optional
 import asyncio
 import aiohttp
 import csv
@@ -14,63 +13,56 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from bs4 import BeautifulSoup
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
 app = FastAPI()
-c = 0
+
+c=0
 
 @app.get("/")
 async def root():
     return {"message": "API Connection was succesful"}
 
+
 config_file = "config.json"
-try:
-    with open(config_file, "r") as f:
-        config = json.load(f)
-except FileNotFoundError:
-    raise SystemExit("Config file not found. Exiting...")
+with open(config_file, "r") as f:
+    config = json.load(f)
 
 async def fetch_page(session, url):
     headers = {"User-Agent": random.choice(config["user_agents"])}
-    try:
-        async with session.get(url, headers=headers) as response:
-            return await response.text()
-    except aiohttp.ClientError as e:
-        raise SystemExit(f"Error fetching page: {e}")
+    async with session.get(url, headers=headers) as response:
+        return await response.text()
 
 async def parse_page(html, url, collection):
-    try:
-        soup = BeautifulSoup(html, config["parser"])
-        headlines = soup.title.text
-        for css in soup('link', {'rel': 'stylesheet'}):
-            css.extract()
-        for js in soup('script'):
-            js.extract()
-        for tag in soup.find_all():
-            if re.match(r'^[\W\s]+$', tag.text):
-                tag.decompose()
-        html_string = soup.prettify()
-        story = soup.text
-        if collection is not None:
-            await collection.insert_one({"headlines": headlines, "story": story, "url": url, "html": html_string})
-        else:
-            print(f"Collection '{collection}' does not exist. Skipping insertion.")
-    except Exception as e:
-        raise SystemExit(f"Error parsing page: {e}")
+    soup = BeautifulSoup(html, config["parser"])
+    headlines = soup.title.text
+    for css in soup('link', {'rel': 'stylesheet'}):
+        css.extract()
+    for js in soup('script'):
+        js.extract()
+    tags_to_remove = ['script', 'noscript', 'input', 'link', 'meta', 'style', 'a', 'li', 'title', 'h4', 'h3', 'h2', 'strong', 'button', 'img','nav','header','footer','figure']
+    for tag in soup.find_all(tags_to_remove):
+        tag.decompose()
+    for tag in soup.find_all():
+        if re.match(r'^[\W\s]+$', tag.text):
+            tag.decompose()
+    for tag in soup.find_all():
+        if not tag.text.strip():
+            tag.decompose()
+    html_string = soup.prettify()   
+    story = soup.text 
+    if collection is not None:
+        await collection.insert_one({"headlines": headlines, "story": story, "url": url, "html": html_string})
+    else:
+        print(f"Collection '{collection}' does not exist. Skipping insertion.")
 
 @app.on_event("startup")
 async def startup_db_client():
-    try:
-        app.mongodb = AsyncIOMotorClient(config["mongodb_uri"])[config["mongodb_database"]]
-    except Exception as e:
-        raise SystemExit(f"Error connecting to database: {e}")
+    app.mongodb = AsyncIOMotorClient(config["mongodb_uri"])[config["mongodb_database"]]
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    try:
-        await app.mongodb.client.close()
-    except Exception as e:
-        print(f"Error closing database connection: {e}")
+    await app.mongodb.client.close()
 
 class News(BaseModel):
     headlines: str
@@ -83,41 +75,38 @@ class HTML(BaseModel):
 
 def page(url):
     headers = {"User-Agent": random.choice(config["user_agents"])}
-    try:
-        response = requests.get(url, headers=headers)
-        return response
-    except requests.RequestException as e:
-        print(f"Error fetching page: {e}")
-        return None
-
-@app.get("/read/{url}")
+    response = requests.get(url, headers=headers) 
+    return response
+    
+@app.get("/read")
 def read(url: str):
     res = page(url)
-    if res is not None:
-        soup = BeautifulSoup(res.content, 'html.parser')
-        for css in soup('link', {'rel': 'stylesheet'}):
-            css.extract()
-        for js in soup('script'):
-            js.extract()
-        for tag in soup.find_all():
-            if re.match(r'^[\W\s]+$', tag.text):
-                tag.decompose()
-        final = HTML(html=soup.prettify())
-        return final
-    else:
-        return {"error": "Failed to fetch page"}
+    soup = BeautifulSoup(res.content, 'html.parser')
+    for css in soup('link', {'rel': 'stylesheet'}):
+        css.extract()
+    for js in soup('script'):
+        js.extract()
+    title = soup.title.text
+    tags_to_remove = ['script', 'noscript', 'input', 'link', 'meta', 'style', 'a', 'li', 'title', 'h4', 'h3', 'h2', 'strong', 'button', 'img','nav','header','footer','figure']
+    for tag in soup.find_all(tags_to_remove):
+        tag.decompose()
+    for tag in soup.find_all():
+        if re.match(r'^[\W\s]+$', tag.text):
+            tag.decompose()
+    for tag in soup.find_all():
+        if not tag.text.strip():
+            tag.decompose()
+    final = HTML(html = soup.prettify())
+    return final
 
 @app.get("/news/{source}/{key}/{size}")
 async def get_news(source: str, key: str, size: int):
-    collection_name = key
+    collection_name = key  # Set the collection name based on the keyword
     pg = 1
+    db_uri = config["mongodb_uri"]
+    db_name = config["mongodb_database"]
     
-    try:
-        app.mongodb = AsyncIOMotorClient(config["mongodb_uri"])[config["mongodb_database"]]
-    except Exception as e:
-        raise SystemExit(f"Error connecting to database: {e}")
-
-    start_time = time.time()
+    start_time = time.time()  # Record the start time
 
     async with aiohttp.ClientSession() as session:
         link = config[source + '_url']
@@ -128,46 +117,42 @@ async def get_news(source: str, key: str, size: int):
             pg += 1
             await asyncio.gather(*tasks)
 
-    end_time = time.time()
-    elapsed_time_ms = (end_time - start_time) * 1000
-    print(f"Scraping completed in {elapsed_time_ms:.2f} milliseconds.")
+    end_time = time.time()  # Record the end time
+    elapsed_time_ms = (end_time - start_time) * 1000  # Calculate elapsed time in milliseconds
+    print(f"Scraping completed in {elapsed_time_ms:.2f} milliseconds.")  # Print the elapsed time with 2 decimal places
 
     return {"message": "Scraping completed."}
 
 async def scrape_data(session, src, size, key, pg, link, collection_name):
     url = link.format(key=key, page=pg)
     global c
-    try:
-        async with session.get(url) as response:
-            soup = BeautifulSoup(await response.text(), config["parser"])
-            links = soup.find_all("a")
-            count = 0
+    async with session.get(url) as response:
+        soup = BeautifulSoup(await response.text(), config["parser"])
+        links = soup.find_all("a")
+        count = 0
 
-            collection = app.mongodb[collection_name]
+        # Use the AsyncIOMotorClient to get the MongoDB collection
+        collection = app.mongodb[collection_name]
 
-            tasks = []
-            for link in links:
-                if c >= size:
-                    break
-                a = link.get("href")
-                if (
-                    (src != "toi" or (src == "toi" and "articleshow" in a))
-                    and (src != "ndtv" or (src == "ndtv" and count % 2 == 0))
-                    and c < config["app_" + src]
-                ):
-                    existing_entry = await collection.find_one({"url": a})
-                    if not existing_entry:
-                        tasks.append(asyncio.ensure_future(parse_page(await fetch_page(session, a), a, collection)))
-                        c += 1
-                count += 1
-            await asyncio.gather(*tasks)
-    except aiohttp.ClientError as e:
-        print(f"Error fetching page: {e}")
-    except Exception as e:
-        print(f"Error scraping data: {e}")
-
-
-
-
-
+        tasks = []
+        for link in links:
+            if c >= size:
+                break
+            a = link.get("href")
+            if (
+                (src != "toi" or (src == "toi" and "/articleshow/" in a))
+                and (src != "ndtv" or (src == "ndtv" and count % 2 == 0))
+                and c < config["app_" + src]
+            ):
+                # Check if an entry with the same URL already exists
+                existing_entry = await collection.find_one({"url": a})
+                if not existing_entry:
+                    tasks.append(
+                        asyncio.ensure_future(
+                            parse_page(await fetch_page(session, a), a, collection)
+                        )
+                    )
+                    c += 1
+            count += 1
+        await asyncio.gather(*tasks)
 
