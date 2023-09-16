@@ -8,6 +8,5 @@ random
 re 
 math 
 requests 
-motor 
-aiofiles 
+motor
 beautifulsoup4
