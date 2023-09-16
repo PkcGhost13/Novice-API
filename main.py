@@ -18,7 +18,6 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 app = FastAPI()
 
 c = 0
-data_to_return = []
 
 
 @app.get("/")
@@ -39,7 +38,6 @@ async def fetch_page(session, url):
     except Exception as e:
         print(f"Error fetching URL: {url}, Error: {str(e)}")
         return ""
-
 
 
 async def parse_page(html, url, collection):
@@ -159,35 +157,51 @@ def read(url: str):
     return final
 
 
-
 @app.get("/news/{source}/{key}/{size}")
 async def get_news(source: str, key: str, size: int):
+    global c 
+    c=0
     collection_name = key  # Set the collection name based on the keyword
     pg = 1
     db_uri = config["mongodb_uri"]
     db_name = config["mongodb_database"]
-    
+
     start_time = time.time()  # Record the start time
 
     async with aiohttp.ClientSession() as session:
-        link = config[source + '_url']
+        link = config[source + "_url"]
         pages = math.ceil(size / config["app_" + source])
         scraped_data = []  # Create a list to collect all scraped data
         while pg <= pages:
             tasks = []
-            tasks.append(asyncio.ensure_future(scrape_data(session, source, size, key, pg, link, collection_name)))
+            tasks.append(
+                asyncio.ensure_future(
+                    scrape_data(session, source, size, key, pg, link, collection_name)
+                )
+            )
             pg += 1
-            scraped_data.extend(await asyncio.gather(*tasks))  # Extend the list with scraped data from this page
+            scraped_data.extend(
+                await asyncio.gather(*tasks)
+            )  # Extend the list with scraped data from this page
 
     end_time = time.time()  # Record the end time
-    elapsed_time_ms = (end_time - start_time) * 1000  # Calculate elapsed time in milliseconds
-    print(f"Scraping completed in {elapsed_time_ms:.2f} milliseconds.")  # Print the elapsed time with 2 decimal places
+    elapsed_time_ms = (
+        end_time - start_time
+    )  # Calculate elapsed time in milliseconds
+    print(
+        f"Scraping completed in {elapsed_time_ms:.2f} seconds."
+    )  # Print the elapsed time with 2 decimal places
 
-    return {"message": "Scraping completed.", "data": data_to_return}  # Return both a message and the scraped data
+    return {
+        "message": "Scraping completed.",
+        "data": scraped_data,
+        "time_taken":elapsed_time_ms
+    }  # Return both a message and the scraped data
 
 
 async def scrape_data(session, src, size, key, pg, link, collection_name):
     url = link.format(key=key, page=pg)
+    data_return=[]
     global c
     async with session.get(url) as response:
         soup = BeautifulSoup(await response.text(), config["parser"])
@@ -214,7 +228,9 @@ async def scrape_data(session, src, size, key, pg, link, collection_name):
                 existing_entry = await collection.find_one({"url": a})
                 if not existing_entry:
                     data = await parse_page(await fetch_page(session, a), a, collection)
-                    data_to_return.append(data)  # Append the data to the list
+                    data_return.append(data)  # Append the data to the list
                     c += 1
             count += 1
         await asyncio.gather(*tasks)
+        return data_return
+
