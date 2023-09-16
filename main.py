@@ -225,11 +225,9 @@ async def scrape_data(session, src, size, key, pg, link, collection_name):
             ):
                 print(a)
                 # Check if an entry with the same URL already exists
-                existing_entry = await collection.find_one({"url": a})
-                if not existing_entry:
-                    data = await parse_page(await fetch_page(session, a), a, collection)
-                    data_return.append(data)  # Append the data to the list
-                    c += 1
+                data = await parse_page(await fetch_page(session, a), a, collection)
+                data_return.append(data)  # Append the data to the list
+                c += 1
             count += 1
         await asyncio.gather(*tasks)
         return data_return
