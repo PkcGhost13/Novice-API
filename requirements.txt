@@ -1,10 +1,6 @@
 fastapi[all]
 asyncio 
 aiohttp 
-json 
-random 
-re 
-math 
 requests 
 motor
 beautifulsoup4
