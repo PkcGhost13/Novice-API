@@ -19,6 +19,21 @@ app = FastAPI()
 
 c = 0
 
+origins = [
+    "*",
+    "52.41.36.82",
+    "54.191.253.12",
+    "44.226.122.3",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/")
 async def root():
@@ -159,8 +174,8 @@ def read(url: str):
 
 @app.get("/news/{source}/{key}/{size}")
 async def get_news(source: str, key: str, size: int):
-    global c 
-    c=0
+    global c
+    c = 0
     collection_name = key  # Set the collection name based on the keyword
     pg = 1
     db_uri = config["mongodb_uri"]
@@ -185,9 +200,7 @@ async def get_news(source: str, key: str, size: int):
             )  # Extend the list with scraped data from this page
 
     end_time = time.time()  # Record the end time
-    elapsed_time_ms = (
-        end_time - start_time
-    )  # Calculate elapsed time in milliseconds
+    elapsed_time_ms = end_time - start_time  # Calculate elapsed time in milliseconds
     print(
         f"Scraping completed in {elapsed_time_ms:.2f} seconds."
     )  # Print the elapsed time with 2 decimal places
@@ -195,13 +208,13 @@ async def get_news(source: str, key: str, size: int):
     return {
         "message": "Scraping completed.",
         "data": scraped_data,
-        "time_taken":elapsed_time_ms
+        "time_taken": elapsed_time_ms,
     }  # Return both a message and the scraped data
 
 
 async def scrape_data(session, src, size, key, pg, link, collection_name):
     url = link.format(key=key, page=pg)
-    data_return=[]
+    data_return = []
     global c
     async with session.get(url) as response:
         soup = BeautifulSoup(await response.text(), config["parser"])
@@ -231,4 +244,3 @@ async def scrape_data(session, src, size, key, pg, link, collection_name):
             count += 1
         await asyncio.gather(*tasks)
         return data_return
-
