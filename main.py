@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup
 from motor.motor_asyncio import AsyncIOMotorClient
 
 app = FastAPI()
-
+c = 0
 
 @app.get("/")
 async def root():
@@ -165,6 +165,7 @@ async def scrape_data(session, src, size, key, pg, link, collection_name):
         print(f"Error fetching page: {e}")
     except Exception as e:
         print(f"Error scraping data: {e}")
+
 
 
 
