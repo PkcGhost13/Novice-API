@@ -1,0 +1,29 @@
+{
+    "parser":"html.parser",
+    "toi_url":"https://timesofindia.indiatimes.com/topic/{key}/{page}",
+    "ndtv_url":"https://www.ndtv.com/page/topic-load-more/from/allnews/type/news/page/{page}/query/{key}",
+    "indianexpress_url":"https://cse.google.com/cse?cx=e1a7e63ac59ae4a39&q={key}#gsc.tab=0&gsc.q={key}&gsc.sort=&gsc.page={page}",
+    "abp_url":"https://news.abplive.com/topic/{key}/page-{page}",
+    "hindu_url":"https://www.thehindu.com/search/#gsc.tab=0&gsc.q={key}&gsc.sort=&gsc.page={page}",
+    "firstpost_url":"https://www.firstpost.com/search?q={key}#gsc.tab=0&gsc.q={key}&gsc.sort=&gsc.page={page}",
+    "pages": 10,
+    "app_toi":20,
+    "app_ndtv":15,
+    "user_agents": [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0.2",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0.2",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/91.0.864.37",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Version/13.1.2 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36 Edg/89.0.774.54",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Safari/537.36"
+    ],
+    "links_file":"links.csv",
+    "data_file":"dataset.csv",
+    "file_rows":["Headlines","Story","URL"],
+    "mongodb_uri": "mongodb+srv://chatterjeepawankumar:.HYwyVD73aHa5i2@cluster0.vd8gnmo.mongodb.net/?retryWrites=true&w=majority",
+    "mongodb_database": "data"
+}

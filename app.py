@@ -1,4 +1,3 @@
-from typing import Optional
 import asyncio
 import aiohttp
 import csv
@@ -17,11 +16,28 @@ from bs4 import BeautifulSoup
 from motor.motor_asyncio import AsyncIOMotorClient
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
+origins = [
+    "*",
+    "http://localhost",
+    "http://localhost:8000",
+    "http://localhost:5500",
+    "http://localhost:3000",
+    "http://localhost:10798",
+    "http://127.0.0.0:8000",
+    "https://example.com",
+    "https://www.example.com",
+]
 
-@app.get("/")
-async def root():
-    return {"message": "API Connection was succesful"}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 config_file = "config.json"
 try:
@@ -72,6 +88,14 @@ async def shutdown_db_client():
     except Exception as e:
         print(f"Error closing database connection: {e}")
 
+@app.get("/")
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/reader")
+async def reader(request: Request):
+    return templates.TemplateResponse("reader.html", {"request": request})
+
 class News(BaseModel):
     headlines: str
     story: str
@@ -90,7 +114,7 @@ def page(url):
         print(f"Error fetching page: {e}")
         return None
 
-@app.get("/read/{url}")
+@app.get("/read")
 def read(url: str):
     res = page(url)
     if res is not None:
@@ -166,7 +190,6 @@ async def scrape_data(session, src, size, key, pg, link, collection_name):
     except Exception as e:
         print(f"Error scraping data: {e}")
 
-
-
-
-
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, port=8001)

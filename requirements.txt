@@ -1,1 +1,13 @@
 fastapi[all]
+asyncio 
+aiohttp 
+csv 
+time 
+json 
+random 
+re 
+math 
+requests 
+motor 
+aiofiles 
+beautifulsoup4
