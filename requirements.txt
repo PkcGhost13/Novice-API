@@ -1,7 +1,6 @@
 fastapi[all]
 asyncio 
 aiohttp 
-csv 
 time 
 json 
 random 
